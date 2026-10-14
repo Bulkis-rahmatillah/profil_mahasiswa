@@ -21,6 +21,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _isLoading = false;
+  String? _selectedGender;
+  bool _agreedToTerms = false;
 
   @override
   void dispose() {
@@ -28,7 +30,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
-    _dobController.dispose.dispose();
+    _dobController.dispose();
     _confirmPasswordController.dispose();
     
     super.dispose();
@@ -81,45 +83,70 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     return null;
   }
 
-  void _submitForm() {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
-      Future.delayed(const Duration(seconds: 2), () {
-        setState(() {
-          _isLoading = false;
-        });
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Registrasi Berhasil'),
-            content: Text(
-              'Selamat, ${_nameController.text}!\nEmail: ${_emailController.text}',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _resetForm();
-                },
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
-      });
-    }
+void _submitForm() {
+  if (_formKey.currentState!.validate()) {
+    _showSummaryDialog();
   }
+}
+
+void _showSummaryDialog() {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Registrasi Berhasil'),
+      content: SingleChildScrollView(
+        child: ListBody(
+          children: [
+            Text('Nama: ${_nameController.text}'),
+            Text('Email: ${_emailController.text}'),
+            Text('No. HP: ${_phoneController.text}'),
+            Text('Tanggal Lahir: ${_dobController.text}'),
+            Text('Jenis Kelamin: ${_selectedGender ?? "-"}'),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+            _resetForm();
+          },
+          child: const Text('OK'),
+        ),
+      ],
+    ),
+  );
+}
 
   void _resetForm() {
     _formKey.currentState!.reset();
     _nameController.clear();
     _emailController.clear();
     _phoneController.clear();
+    _dobController.clear();
     _passwordController.clear();
     _confirmPasswordController.clear();
+
+    setState((){ 
+      _selectedGender = null;
+      _agreedToTerms = false;
+    });
   }
+  Future<void> _selectDate(BuildContext context) async {
+  DateTime? pickedDate = await showDatePicker(
+    context: context,
+    initialDate: DateTime.now(),
+    firstDate: DateTime(1900),
+    lastDate: DateTime.now(),
+  );
+
+  if (pickedDate != null) {
+    setState(() {
+      _dobController.text =
+          "${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}";
+    });
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -188,13 +215,16 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 ),
 const SizedBox(height: 16),
 
-CustomTextField(
+TextFormField(
   controller: _dobController,
-  label: 'Tanggal Lahir',
-  hint: 'Pilih Tanggal Lahir (YYYY-MM-DD)',
-  prefixIcon: Icons.calendar_today,
-  readOnly: true, // Biar gak ketik manual, harus pilih dari kalender
+  readOnly: true,
   onTap: () => _selectDate(context),
+  decoration: const InputDecoration(
+    labelText: 'Tanggal Lahir',
+    hintText: 'Pilih Tanggal Lahir (YYYY-MM-DD)',
+    prefixIcon: Icon(Icons.calendar_today),
+    border: OutlineInputBorder(),
+  ),
   validator: (value) {
     if (value == null || value.isEmpty) {
       return 'Tanggal lahir tidak boleh kosong';
@@ -202,6 +232,41 @@ CustomTextField(
     return null;
   },
 ),
+const SizedBox(height: 16),
+// Field Jenis Kelamin (Latihan 3)
+DropdownButtonFormField<String>(
+  value: _selectedGender,
+  decoration: const InputDecoration(
+    labelText: 'Jenis Kelamin',
+    hintText: 'Pilih Jenis Kelamin',
+    prefixIcon: Icon(Icons.person_outline),
+    border: OutlineInputBorder(),
+  ),
+  items: const [
+    DropdownMenuItem(
+      value: 'Laki-laki',
+      child: Text('Laki-laki'),
+    ),
+    DropdownMenuItem(
+      value: 'Perempuan',
+      child: Text('Perempuan'),
+    ),
+  ],
+  onChanged: (value) {
+    setState(() {
+      _selectedGender = value;
+    });
+  },
+  validator: (value) {
+    if (value == null || value.isEmpty) {
+      return 'Jenis kelamin wajib dipilih';
+    }
+    return null;
+  },
+),
+const SizedBox(height: 16),
+
+const SizedBox(height: 16),
 const SizedBox(height: 16),
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -255,6 +320,44 @@ const SizedBox(height: 16),
                     validator: _validateConfirmPassword,
                   ),
                 ),
+
+                // Checkbox Syarat & Ketentuan (Latihan 4)
+FormField<bool>(
+  initialValue: _agreedToTerms,
+  validator: (value) {
+    if (_agreedToTerms != true) {
+      return 'Anda harus menyetujui Syarat dan Ketentuan';
+    }
+    return null;
+  },
+  builder: (state) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CheckboxListTile(
+          title: const Text('Saya menyetujui Syarat dan Ketentuan'),
+          value: _agreedToTerms,
+          onChanged: (value) {
+            setState(() {
+              _agreedToTerms = value ?? false;
+              state.didChange(_agreedToTerms);
+            });
+          },
+          controlAffinity: ListTileControlAffinity.leading,
+          contentPadding: EdgeInsets.zero,
+        ),
+        if (state.hasError)
+          Padding(
+            padding: const EdgeInsets.only(left: 12.0),
+            child: Text(
+              state.errorText!,
+              style: const TextStyle(color: Colors.red, fontSize: 12),
+            ),
+          ),
+      ],
+    );
+  },
+),
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: _isLoading ? null : _submitForm,
