@@ -12,8 +12,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _dobController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -23,8 +26,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
+    _dobController.dispose.dispose();
     _confirmPasswordController.dispose();
+    
     super.dispose();
   }
 
@@ -110,6 +116,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     _formKey.currentState!.reset();
     _nameController.clear();
     _emailController.clear();
+    _phoneController.clear();
     _passwordController.clear();
     _confirmPasswordController.clear();
   }
@@ -160,6 +167,42 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   keyboardType: TextInputType.emailAddress,
                   validator: _validateEmail,
                 ),
+                CustomTextField(
+  controller: _phoneController,
+  label: 'Nomor Telepon',
+  hint: 'Contoh: 081234567890',
+  prefixIcon: Icons.phone,
+  keyboardType: TextInputType.phone,
+  validator: (value) {
+    if (value == null || value.isEmpty) {
+      return 'Nomor telepon tidak boleh kosong';
+    }
+    if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+      return 'Nomor telepon hanya boleh berisi angka';
+    }
+    if (value.length < 10 || value.length > 13) {
+      return 'Nomor telepon harus 10 - 13 digit';
+    }
+    return null;
+  },
+),
+const SizedBox(height: 16),
+
+CustomTextField(
+  controller: _dobController,
+  label: 'Tanggal Lahir',
+  hint: 'Pilih Tanggal Lahir (YYYY-MM-DD)',
+  prefixIcon: Icons.calendar_today,
+  readOnly: true, // Biar gak ketik manual, harus pilih dari kalender
+  onTap: () => _selectDate(context),
+  validator: (value) {
+    if (value == null || value.isEmpty) {
+      return 'Tanggal lahir tidak boleh kosong';
+    }
+    return null;
+  },
+),
+const SizedBox(height: 16),
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: TextFormField(
